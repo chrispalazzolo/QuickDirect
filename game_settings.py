@@ -1,0 +1,20 @@
+# Screen dimensions
+WIDTH = 445
+HEIGHT = 496
+
+# Game Board
+TILE_SIZE = 25
+GAP_SIZE = 5
+
+# Colors
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+REDHOVER = (255, 100, 100)
+GREEN = (0, 255, 0)
+GREENHOVER = (100, 255, 100)
+BLUE = (0, 0, 255)
+YELLOW = (255, 255, 0)
+GRAY = (150, 150, 150)
+CHARCOAL = (52, 64, 85)
+CELTICBLUE = (38, 109, 211)
