@@ -1,2 +1,2 @@
 # QuickDirect
-A simple game built with python
+A simple game built in python with pygame
