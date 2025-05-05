@@ -1,90 +1,83 @@
 import pygame
 import sys
 import random
-from enum import Enum
-from game_settings import WIDTH, HEIGHT, TILE_SIZE, GAP_SIZE, BLACK, WHITE, RED, REDHOVER, GREEN, GREENHOVER, BLUE, GRAY, CHARCOAL, CELTICBLUE
-from game_objects import Runner, Stopwatch, Counter
+from game_enums import GameStates, Directions
+from game_settings import SCREEN_WIDTH, SCREEN_HEIGHT, TILE_SIZE, NUM_TILES_XY, DISPLAY_HEIGHT, DISPLAY_LINE, DISPLAY_HEIGHT_TOTAL, TILE_GAP_SIZE, BLACK, WHITE, RED, REDHOVER, GREEN, GREENHOVER, BLUE, GRAY, CHARCOAL, CELTICBLUE
+from game_objects import GameBoard, Runner, Stopwatch, Counter
 from game_ui import Button
 from game_fonts import TITLE_FONT, DISPLAY_FONT, BUTTON_FONT
 
-def draw_runner(surface, top_offset):
-    rows = (HEIGHT - top_offset)//TILE_SIZE
-    cols = WIDTH//TILE_SIZE
-    gap = GAP_SIZE
-
-    rand_row = random.randint(0, rows)
-    rand_col = random.randint(0, cols)
-
-    x_pos = rand_col * TILE_SIZE
-    if rand_col > 0:
-        x_pos += rand_col * GAP_SIZE
-
-    y_pos = (rand_row * TILE_SIZE) + top_offset
-    if rand_row > 0:
-        y_pos += rand_col * GAP_SIZE
-
-    # Temp Remove the following
-    x_pos = 0
-    y_pos = 0 + top_offset
-
-    rect = pygame.Rect(x_pos, y_pos, TILE_SIZE, TILE_SIZE)
-    pygame.draw.rect(surface, CELTICBLUE, rect)
-
-def draw_board(surface, top_offset):
-    tile_size = TILE_SIZE
-    rows = (HEIGHT - top_offset)//tile_size
-    cols = WIDTH//tile_size
-    gap = GAP_SIZE
-
-    for y in range(rows):
-        y_pos = (y * tile_size) + top_offset
-        if y > 0:
-            y_pos += y * gap
-        
-        for x in range(cols):
-            x_pos = x * tile_size
-            if x > 0:
-                x_pos += x * gap
-            
-            rect = pygame.Rect(x_pos, y_pos, tile_size, tile_size)
-            pygame.draw.rect(surface, CHARCOAL, rect)
+from cProfile import Profile
+from pstats import SortKey, Stats
 
 def main():
-    class GameStates(Enum):
-        INITIAL = 1
-        PLAYING = 2
-        ENDED = 3
-    
     game_state = GameStates.INITIAL
 
     pygame.init()
+    pygame.key.set_repeat(0)
 
     # Set up display
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption('Quick Direct!')
 
+    # Initialize game components
     stopwatch = Stopwatch(15, 10)
-    counter = Counter(WIDTH - 100, 10)
-    runner = Runner(0, 0 + 50, TILE_SIZE, TILE_SIZE, CELTICBLUE)
+    counter = Counter(SCREEN_WIDTH - 100, 10)
+    game_board = GameBoard(0, DISPLAY_HEIGHT_TOTAL, NUM_TILES_XY, CHARCOAL, TILE_SIZE, TILE_GAP_SIZE, GRAY)
+    runner = Runner(TILE_GAP_SIZE, DISPLAY_HEIGHT_TOTAL + TILE_GAP_SIZE, TILE_SIZE, TILE_SIZE, CELTICBLUE)
+
     # Control buttons
-    start_button = Button(WIDTH//2, HEIGHT//2, 100, 40, "Start", GREEN, GREENHOVER)
-    replay_button = Button(WIDTH//2, HEIGHT//2, 100, 40, "Play Aagin", RED, REDHOVER)
+    start_button = Button(SCREEN_WIDTH//2, SCREEN_HEIGHT//2, 100, 40, "Start", GREEN, GREENHOVER)
+    replay_button = Button(SCREEN_WIDTH//2, SCREEN_HEIGHT//2, 100, 40, "Play Aagin", RED, REDHOVER)
     
     # Game loop
     clock = pygame.time.Clock()
     running = True
-    
+    key_is_pressed = False # To stop key press repeating if key is held down
+
     while running:
         # Process events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             
+            # When game first loads, check if the start button has been clicked.
             if game_state == GameStates.INITIAL:
                 if start_button.is_clicked(event):
                     game_state = GameStates.PLAYING
                     stopwatch.start()
-            
+            # While a game is currently in play, check if any directional keys have been pressed.
+            elif game_state == GameStates.PLAYING:
+                if event.type == pygame.KEYDOWN and not key_is_pressed:
+                    key_is_pressed = True
+                    keys = pygame.key.get_pressed()
+                    if keys[pygame.K_UP] or keys[pygame.K_w]:
+                        runner.change_direction(Directions.UP)
+                        counter.up()
+                    if keys[pygame.K_DOWN] or keys[pygame.K_s]:
+                        runner.change_direction(Directions.DOWN)
+                        counter.up()
+                    if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+                        runner.change_direction(Directions.LEFT)
+                        counter.up()
+                    if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+                        runner.change_direction(Directions.RIGHT)
+                        counter.up()
+
+                if event.type == pygame.KEYUP:
+                    key_is_pressed = False
+            # If a game has been played and is now over, check to see if play again button has been clicked.
+            elif game_state == GameStates.ENDED:
+                if replay_button.is_clicked(event):
+                    # Reset game components and change the state to PLAYING
+                    game_state = GameStates.PLAYING
+                    runner.reset()
+                    stopwatch.reset()
+                    counter.reset()
+                    stopwatch.start()
+
+        screen.fill(BLACK)
+
         if game_state == GameStates.INITIAL:
             # Update
 
@@ -94,17 +87,21 @@ def main():
             # Update
             stopwatch.update()
             runner.update()
-
+            
+            if (runner.rect.x < 0 or runner.rect.x >= SCREEN_WIDTH) or (runner.rect.y < DISPLAY_HEIGHT_TOTAL or runner.rect.y >= SCREEN_HEIGHT):
+                game_state = GameStates.ENDED
+                continue
+            
             # Draw
-            screen.fill(BLACK)
-            pygame.draw.line(screen, GRAY, (0, 50), (WIDTH, 50), 2)
+            pygame.draw.line(screen, GRAY, (0, 50), (SCREEN_WIDTH, 50), DISPLAY_LINE)
             stopwatch.draw(screen)
             counter.draw(screen)
-            top_offset = 53
-            draw_board(screen,top_offset)
-            #draw_runner(screen, top_offset)
+            game_board.draw(screen)
             runner.draw(screen)
-        
+
+        elif game_state == GameStates.ENDED:
+            replay_button.draw(screen)
+
         # Update display
         pygame.display.flip()
         
