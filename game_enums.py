@@ -6,8 +6,8 @@ class GameStates(Enum):
         ENDED = 3
     
 class Directions(Enum):
-        NONE = 0
-        UP = 1
-        DOWN = 2
-        LEFT = 3
-        RIGHT = 4
+        NONE = -1
+        UP = 0
+        DOWN = 180
+        LEFT = 270
+        RIGHT = 90

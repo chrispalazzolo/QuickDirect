@@ -65,29 +65,31 @@ class Runner:
     def draw(self, surface):
         pygame.draw.rect(surface, self.color, self.rect)
 
-class DirectionTile:
-    def __init__(self, position, constraints, direction):
-        self.x = position[0]
-        self.y = position[1]
-        self.row_first = constraints[0]
-        self.row_last = constraints[1]
-        self.col_first = constraints[2]
-        self.col_last = constraints[3]
-        self.direction = direction
-        self.rect = pygame.Rect(position[0], position[1], TILE_SIZE, TILE_SIZE)
-    
-    def place(self, row, col, constraint):
-        rand_num = random.randint(constraint[0], constraint[1])
+class DirectionTarget:
+    def __init__(self, board_offset, max_row_col):
+        self.img = pygame.image.load("arrow.png")
+        self.offset = board_offset
+        self.x = board_offset[0]
+        self.y = board_offset[1]
+        self.max_row = max_row_col
+        self.max_col = max_row_col
+        self.angle = Directions.DOWN.value
+        self.current_row = 0
+        self.current_col = 0
+        self.rotate_arrow()
 
-        if row > -1:
-            new_row = row
-            new_col = rand_num
-        elif col > -1:
-            new_col = col
-            new_row = rand_num
-    
+    def rotate_arrow(self):
+        self.img = pygame.transform.rotate(self.img, 0)
+        self.img = pygame.transform.rotate(self.img, self.angle)
+
+    def get_random_direction(self):
+        new_direction = random.choice(list(Directions))
+
+    def update(self):
+        self.get_random_direction()
+
     def draw(self, surface):
-        pygame.draw.rect(surface, self.color, self.rect)
+        surface.blit(self.img, (self.x, self.y))
 
 class GameBoard:
     def __init__(self, x, y, num_tiles_xy, color, tile_size, tile_gap_size, tile_gap_color):
