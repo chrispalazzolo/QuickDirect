@@ -1,2 +1,2 @@
 # QuickDirect
-A simple game built in python with pygame
+WIP - A simple game built in python with pygame
