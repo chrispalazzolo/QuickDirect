@@ -1,5 +1,5 @@
 import pygame
-from game_settings import BLACK
+from game_globals import BLACK
 from game_fonts import BUTTON_FONT
 
 class Button:
